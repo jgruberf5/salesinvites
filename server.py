@@ -263,7 +263,15 @@ def upload_list():
     <title>Upload CSV List</title>
     </head>
     <body>
-    <h1>Invite with CSV List</h1>
+    <h1>Invite with Excel Format CSV List</h1>
+    <pre>
+    FirstName,LastName,email
+    Bob,Johnson,bob.johnson@f5.com
+    Mike,Smith,mike.smith@f5.com
+    Don,Williams,don.williams@f5.com
+    Scott,White,scott.white@f5.com
+    Justin,Case,justin.case@f5.com
+    </pre>
     <form method=post enctype=multipart/form-data>
       <table>
       <tr><th align='left'>API Host: </th><td><input name=apihost value=api.cloudservices.f5.com></td></tr>
