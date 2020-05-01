@@ -196,7 +196,11 @@ class ListProcessingThread(object):
                     if first_name == 'FirstName':
                         continue
                     if not email in sent_invites:
-                        LOG.info('processing invitation for %s %s: %s', first_name, last_name, email)
+                        if DRY_RUN:
+                            LOG.info('dry run - would have processing invitation for %s %s: %s', first_name, last_name, email)
+                        else:
+                            LOG.info('processing invitation for %s %s: %s', first_name, last_name, email)
+                            issue_invite(token, account_info['account_id'], account_info['user_id'], first_name, last_name, email)
                         if DELAY > 0:
                             time.sleep(DELAY)
                     else:
