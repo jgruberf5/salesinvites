@@ -272,7 +272,7 @@ def upload_list():
       <tr><th align='left'>Password: </th><td><input name=password></td></tr>
       <tr><th align='left'>Invite as Role ID: </th><td><input name=roleid value=r-NAYFdYfiR></td></tr>
       <tr><th align='left'>Dry Run: </th><td><input name=dryrun type=checkbox unchecked></td></tr>
-      <tr><th align='left'>Delete Between Invites (ms): </th><td><input type=number name=delay min=0 max=10000 value=1000></td></tr>
+      <tr><th align='left'>Delay Between Invites (ms): </th><td><input type=number name=delay min=0 max=10000 value=1000></td></tr>
       <tr><th align='left'>CSV Invite File: </th><td><input type=file name=file></td></tr>
       </table>
       </br>
