@@ -7,7 +7,7 @@ Install python3
 
 ```
 pip3 install -r requirements.txt
-python3 server.py
+./server.py
 ```
 
 Open a browser to http://localhost:5000
