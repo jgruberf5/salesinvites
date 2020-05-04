@@ -235,8 +235,10 @@ def upload_list():
             API_VERSION = request.form['apiversion']
         if 'roleid' in request.form:
             ROLE_ID = request.form['roleid']
-        if 'dryrun' in request.form:
+        if 'dryrun' in request.form and request.form['dryrun'] == 'on':
             DRY_RUN = True
+        else:
+            DRY_RUN = False
         if 'delay' in request.form:
             delay = request.form['delay']
             DELAY = round((int(delay) / 1000), 2)
