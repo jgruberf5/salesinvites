@@ -28,7 +28,7 @@ import time
 
 from flask import Flask, flash, request, redirect, url_for
 
-VERSION = '05042020-1'
+VERSION = '05042020-3'
 
 CSV_FILE = '/tmp/list.csv'
 LOG_FILE = '/tmp/logoutput.txt'
@@ -154,7 +154,7 @@ def delete_accepted_invitations(token, account_id):
                 else:
                     LOG.info('deleting accepted invitation for %s',
                              invite['invitee_email'])
-                    delete_invite(token, invite('invite_id'))
+                    delete_invite(token, invite['invite_id'])
 
 
 def get_existing_account_members(token, account_id):
