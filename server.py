@@ -55,6 +55,7 @@ DELAY = 0
 
 TOKEN = None
 
+
 def get_service_token():
     if USERNAME and PASSWORD:
         try:
@@ -66,11 +67,13 @@ def get_service_token():
                 "password": PASSWORD
             }
             url = "https://%s/%s/svc-auth/login" % (API_HOST, API_VERSION)
-            response = requests.post(url, headers=headers, data=json.dumps(data))
+            response = requests.post(
+                url, headers=headers, data=json.dumps(data))
             if response.status_code < 300:
                 return response.json()['access_token']
             else:
-                LOG.error('error retrieving token: %d: %s', response.status_code, response.content)
+                LOG.error('error retrieving token: %d: %s',
+                          response.status_code, response.content)
         except Exception as ex:
             LOG.error('error retrieveing token: %s', ex)
         return None
@@ -95,7 +98,8 @@ def get_account_info(token):
                     'account_id': data['primary_account_id']
                 }
             else:
-                LOG.error('error retrieving account: %d: %s', response.status_code, response.content)
+                LOG.error('error retrieving account: %d: %s',
+                          response.status_code, response.content)
         except Exception as ex:
             LOG.error('error retrieveing account: %s', ex)
     else:
@@ -104,31 +108,80 @@ def get_account_info(token):
 
 
 def get_existing_invites(token):
-    if token:
-        try:
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer %s" % token
-            }
-            url = "https://%s/%s/svc-account/invites" % (API_HOST, API_VERSION)
-            response = requests.get(url, headers=headers)
-            if response.status_code < 300:
-                return response.json()
-            else:
-                LOG.error('error retrieving existing invitations: %d: %s', response.status_code, response.content)
-        except Exception as ex:
-            LOG.error('error retrieveing account invitations: %s', ex)
-    else:
-        LOG.error('can not retrieve account invitiations without access token')
+    try:
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer %s" % token
+        }
+        url = "https://%s/%s/svc-account/invites" % (API_HOST, API_VERSION)
+        response = requests.get(url, headers=headers)
+        if response.status_code < 300:
+            return response.json()
+        else:
+            LOG.error('error retrieving existing invitations: %d: %s',
+                      response.status_code, response.content)
+    except Exception as ex:
+        LOG.error('error retrieveing account invitations: %s', ex)
+    return None
+
+
+def delete_invite(token, invite_id):
+    try:
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer %s" % token
+        }
+        url = "https://%s/%s/svc-account/invites/%s" % (
+            API_HOST, API_VERSION, invite_id)
+        response = requests.delete(url, headers=headers)
+        if response.status_code < 300:
+            return True
+        else:
+            LOG.error('error deleting invitation: %s - %d: %s',
+                      invite_id, response.status_code, response.content)
+    except Exception as ex:
+        LOG.error('error deleting invitations: %s - %s', invite_id, ex)
+
+
+def delete_accepted_invitations(token, account_id):
+    existing_invitations = get_existing_invites(token)
+    if existing_invitations:
+        for invite in existing_invitations['invites']:
+            if invite['status'] == 'accepted' and invite['inviter_account_id'] == account_id:
+                if DRY_RUN:
+                    LOG.info(
+                        'dry run - would have deleted accepted invitation for %s', invite['invitee_email'])
+                else:
+                    LOG.info('deleting accepted invitation for %s',
+                             invite['invitee_email'])
+                    delete_invite(token, invite('invite_id'))
+
+
+def get_existing_account_members(token, account_id):
+    try:
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer %s" % token
+        }
+        url = "https://%s/%s/svc-account/accounts/%s/members" % (
+            API_HOST, API_VERSION, account_id)
+        response = requests.get(url, headers=headers)
+        if response.status_code < 300:
+            return response.json()
+        else:
+            LOG.error('error retrieving existing account members: %d: %s',
+                      response.status_code, response.content)
+    except Exception as ex:
+        LOG.error('error retrieveing existing account members: %s', ex)
     return None
 
 
 def issue_invite(token, account_id, user_id, first_name, last_name, email):
     try:
         headers = {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer %s" % token
-            }
+            "Content-Type": "application/json",
+            "Authorization": "Bearer %s" % token
+        }
         data = {
             "inviter_account_id": account_id,
             "inviter_user_id": user_id,
@@ -137,9 +190,9 @@ def issue_invite(token, account_id, user_id, first_name, last_name, email):
             ],
             "invitees": [
                 {
-                  "first_name": first_name,
-                  "last_name": last_name,
-                  "email": email
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "email": email
                 }
             ],
             "role_id": ROLE_ID
@@ -149,7 +202,8 @@ def issue_invite(token, account_id, user_id, first_name, last_name, email):
         if response.status_code < 300:
             return response.json()
         else:
-            LOG.error('error sending invitation for: %s - %d: %s', email, response.status_code, response.content)
+            LOG.error('error sending invitation for: %s - %d: %s',
+                      email, response.status_code, response.content)
     except Exception as ex:
         LOG.error('error sending invitations: %s - %s', email, ex)
 
@@ -173,19 +227,27 @@ class ListProcessingThread(object):
             LOG.error('halting processing missing account ID')
             LOG.info('finished processing %d records', 0)
             return False
-        LOG.info('sending invites with user_id: %s, account id: %s', account_info['user_id'], account_info['account_id'])
-        existing_invitations = get_existing_invites(token)
-        sent_invites = []
-        if existing_invitations:
-           for invite in existing_invitations['invites']:
-               if not invite['delete_time'] and not invite['expire_time']:
-                   sent_invites.append(invite['invitee_email'])
-        else:           
-            LOG.warning('no existing invitations')
-        LOG.info('%d existing invitations found', len(sent_invites))
-            
         if DRY_RUN:
             LOG.info('performing dry run simulation only')
+        LOG.info('deleting accepted invitations for users in account: %s',
+                 account_info['user_id'])
+        delete_accepted_invitations(token, account_info['account_id'])
+        LOG.info('getting existing account members for account: %s',
+                 account_info['account_id'])
+        sent_invites = []
+        members = get_existing_account_members(
+            token, account_info['account_id'])['users']
+        for member in members:
+            sent_invites.append(member['user']['email'])
+        LOG.info('sending invites with user_id: %s, account id: %s',
+                 account_info['user_id'], account_info['account_id'])
+        existing_invitations = get_existing_invites(token)
+        if existing_invitations:
+            for invite in existing_invitations['invites']:
+                if not invite['invitee_email'] in sent_invites and invite['status'] == 'pending':
+                    sent_invites.append(invite['invitee_email'])
+        else:
+            LOG.warning('no existing invitations')
         line_count = 0
         with open(CSV_FILE, newline='') as csvfile:
             try:
@@ -199,20 +261,25 @@ class ListProcessingThread(object):
                         continue
                     if not email in sent_invites:
                         if DRY_RUN:
-                            LOG.info('dry run - would have processed invitation for %s %s: %s', first_name, last_name, email)
+                            LOG.info(
+                                'dry run - would have processed invitation for %s %s: %s', first_name, last_name, email)
                         else:
-                            LOG.info('processing invitation for %s %s: %s', first_name, last_name, email)
-                            issue_invite(token, account_info['account_id'], account_info['user_id'], first_name, last_name, email)
+                            LOG.info('processing invitation for %s %s: %s',
+                                     first_name, last_name, email)
+                            issue_invite(
+                                token, account_info['account_id'], account_info['user_id'], first_name, last_name, email)
                         if DELAY > 0:
                             time.sleep(DELAY)
                     else:
-                        LOG.info('invitation for %s %s: %s already sent', first_name, last_name, email)
+                        LOG.info('invitation for %s %s: %s already processed',
+                                 first_name, last_name, email)
             except Exception as ex:
                 LOG.error('error reading CSV: %s', ex)
         LOG.info('finished processing %d invitations', line_count)
 
 
 app = Flask(__name__)
+
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_list():
@@ -247,7 +314,8 @@ def upload_list():
             flash('No file')
             return redirect(request.url)
         if file:
-            handlers = [h for h in LOG.handlers if not isinstance(h, logging.StreamHandler)]
+            handlers = [h for h in LOG.handlers if not isinstance(
+                h, logging.StreamHandler)]
             for handler in handlers:
                 LOG.removeHandler(handler)
             if os.path.exists(LOG_FILE):
@@ -301,6 +369,7 @@ def upload_list():
     </html>
     ''' % VERSION
 
+
 @app.route('/display_stream')
 def display_stream():
     return '''
@@ -353,11 +422,13 @@ def display_stream():
     </html>
     '''
 
+
 @app.route('/stream_output')
 def stream():
     def generate():
         with open(LOG_FILE, 'r') as log_out:
             yield log_out.read()
     return app.response_class(generate(), mimetype='text/plain')
+
 
 app.run(host='0.0.0.0', threaded=True)
