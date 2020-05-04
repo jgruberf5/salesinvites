@@ -28,6 +28,8 @@ import time
 
 from flask import Flask, flash, request, redirect, url_for
 
+VERSION = '05042020-1'
+
 CSV_FILE = '/tmp/list.csv'
 LOG_FILE = '/tmp/logoutput.txt'
 
@@ -268,6 +270,9 @@ def upload_list():
     </head>
     <body>
     <h1>Invite with Excel Format CSV List</h1>
+    <h2>
+    Version: %s
+    </h2>
     <pre>
     FirstName,LastName,email
     Bob,Johnson,bob.johnson@f5.com
@@ -292,7 +297,7 @@ def upload_list():
     </form>
     </body>
     </html>
-    '''
+    ''' % VERSION
 
 @app.route('/display_stream')
 def display_stream():
